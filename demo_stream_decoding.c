@@ -444,13 +444,12 @@ int init(demo_ctx *dctx, DemuxDecCtx *ctx) {
     memset(ctx, 0, sizeof(DemuxDecCtx));
     ctx->keyframe = dctx->keyframe;
     ctx->skip     = dctx->skip;
-    printf("Connecting to algo server...\n");
     ctx->zmq_ctx = zmq_ctx_new();
     ctx->zmq_sck = zmq_socket(ctx->zmq_ctx, ZMQ_REQ);
     sprintf(ctx->zmq_bind, "tcp://localhost:8003");
-    zmq_connect(ctx->zmq_sck, ctx->zmq_bind);
-    
-    int ret = -1;
+    int ret = zmq_connect(ctx->zmq_sck, ctx->zmq_bind);
+    printf("pid:%d Connecting to algo server %d %d!\n", dctx->pid, ret, errno);
+
     av_register_all();
     avformat_network_init();
     ctx->save_data = 1;
@@ -470,6 +469,9 @@ void requester_process(demo_ctx *dctx, const char *url) {
     sprintf(decctx->src_filename, "%s", url);
     sprintf(decctx->out_filename, "%s/stream_%d", dctx->output, dctx->pid);
     demo_decode_file(decctx);
+    ams_codec_dev_deinit(-1);
+    zmq_close(decctx->zmq_sck);
+    zmq_ctx_destroy(decctx->zmq_ctx);
     sprintf_time(szTime, 32);
     printf("%s pid:%d exit:%s\n", szTime, dctx->pid, url);
 }

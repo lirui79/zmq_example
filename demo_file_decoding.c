@@ -302,17 +302,6 @@ int demo_decode_file(DemuxDecCtx *ctx) {
     }
     ctx->width  = codeCtx->width;
     ctx->height = codeCtx->height;
-/*
-    if (open_codec_context(ctx, &videoStreamIdx, &codeCtx, formatCtx, AVMEDIA_TYPE_VIDEO) >= 0) {
-        videoStream = formatCtx->streams[videoStreamIdx];
-        ctx->width = codeCtx->width;
-        ctx->height = codeCtx->height;
-        enum AVPixelFormat       pix_fmt = codeCtx->pix_fmt;
-        if (ret < 0) {
-            fprintf(stderr, "error Could not allocate raw video buffer\n");
-            return -3;
-        }
-    }*/
 
     int32_t codec_id = codeCtx->codec_id;
     if (codec_id == AV_CODEC_ID_H264){
@@ -454,7 +443,7 @@ int init(demo_ctx *dctx, DemuxDecCtx *ctx) {
     ctx->zmq_sck = zmq_socket(ctx->zmq_ctx, ZMQ_REQ);
     sprintf(ctx->zmq_bind, "tcp://localhost:8003");
     int ret = zmq_connect(ctx->zmq_sck, ctx->zmq_bind);
-    printf("Connecting to algo server %d %d!\n", ret, errno);
+    printf("pid:%d Connecting to algo server %d %d!\n", dctx->pid, ret, errno);
 
     ctx->save_data = 1;
     //init for decoder 
@@ -467,11 +456,6 @@ int init(demo_ctx *dctx, DemuxDecCtx *ctx) {
     return 0;
 }
 
-void handleTimeout(int signal) {
-    if(demctx->debug == 1) std::cout << "[ERRO]: " << getpid() << " Process timed out." << std::endl;
-    kill(getpid(), SIGTERM); // 终止当前进程
-}
-
 void requester_process(demo_ctx *dctx) {
     dctx->zmq_ctx = zmq_ctx_new();
     dctx->zmq_sck  = zmq_socket(dctx->zmq_ctx, ZMQ_REQ);
@@ -480,7 +464,6 @@ void requester_process(demo_ctx *dctx) {
     int timeout = 3*1000;
     zmq_setsockopt(dctx->zmq_sck, ZMQ_RCVTIMEO, &timeout, sizeof(timeout));
     dctx->pid = getpid();
-    if(dctx->debug == 1) std::cout << "[DEBUG]: create pid: " << dctx->pid << " pid " << std::endl;
     init(dctx, decctx);
     while(true) {
         {
@@ -504,6 +487,7 @@ void requester_process(demo_ctx *dctx) {
         
         demo_decode_file(decctx);
     }
+    ams_codec_dev_deinit(-1);
     zmq_close(dctx->zmq_sck);
     zmq_ctx_destroy(dctx->zmq_ctx);
     printf("exit pid:%d\n",  dctx->pid);

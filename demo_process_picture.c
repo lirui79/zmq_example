@@ -82,7 +82,7 @@ void* thread_proc(void *argv) {
         ctx->list->pop_front(ctx->list);
         pthread_mutex_unlock(&(ctx->mutex));
 //        printf("22 %s %d\n", msg.data, msg.size);
-        cJSON* root = cJSON_Parse(msg.data);
+        cJSON* root = cJSON_Parse(msg.data);//{"w": 460, "h": 328, "format": 1, "data": ["/tmp/data//460x328_h264_25fps_523f_1.mp4_3.yuv"]}
         if (root == NULL) {
             continue;
         }
@@ -100,7 +100,7 @@ void* thread_proc(void *argv) {
         struct xml_document *document = xml_parse_document(msg.data, msg.size);
         if (document == NULL) {
            continue;
-        }//{"w": 460, "h": 328, "format": 1, "data": ["/tmp/data//460x328_h264_25fps_523f_1.mp4_3.yuv"]}
+        }
         struct xml_node *root = xml_document_root(document), *node = NULL;
         const uint8_t *nodename[] = {"w", "h", "format", "data"};
         struct xml_string *xname = NULL, *xcontent = NULL;
